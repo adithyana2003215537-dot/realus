@@ -1,0 +1,6 @@
+{
+  "name": "RealUs",
+  "description": "A private digital home for couples featuring shared moments, timeline story, love notes, intimate chat, and mood sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
