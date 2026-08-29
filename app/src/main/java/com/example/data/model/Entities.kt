@@ -100,6 +100,8 @@ data class CoupleSettings(
   val daysTogether: Int = 0,
   val partnerMood: String = "Loved",
   val coupleCode: String = "",
+  val userAvatarUrl: String = "",
+  val partnerAvatarUrl: String = "",
   val themeName: String = "Night",
   val syncWithPartner: Boolean = true,
   val biometricLock: Boolean = false,

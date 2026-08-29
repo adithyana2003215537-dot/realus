@@ -336,6 +336,19 @@ class FirebaseManager private constructor(private val context: Context) {
     }
   }
 
+  suspend fun updateUserProfilePic(uid: String, profilePicUrl: String): Result<Unit> {
+    val db = firestore ?: return Result.failure(IllegalStateException("Firestore not initialized"))
+    return try {
+      db.collection("users").document(uid)
+        .set(mapOf("profilePicUrl" to profilePicUrl), SetOptions.merge())
+        .await()
+      Result.success(Unit)
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to update profile pic", e)
+      Result.failure(e)
+    }
+  }
+
   suspend fun getUserProfile(uid: String): Result<UserProfile?> {
     val db = firestore ?: return Result.failure(IllegalStateException("Firestore not initialized"))
     return try {

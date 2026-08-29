@@ -1,6 +1,11 @@
 package com.example.ui.screens
 
+import android.graphics.Bitmap
+import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,19 +21,25 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Fingerprint
@@ -37,6 +48,8 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Nightlight
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Sync
@@ -51,6 +64,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -79,6 +93,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.example.data.model.CoupleSettings
+import com.example.data.util.ImagePickerHelper
 import com.example.ui.components.RealUsLogo
 import com.example.ui.theme.AppTheme
 import com.example.ui.theme.AppThemeMode
@@ -92,6 +107,8 @@ fun ProfileScreen(
   onSwitchTheme: (String) -> Unit,
   onToggleSetting: (String) -> Unit,
   onUpdateProfile: (name1: String, name2: String, anniversary: String) -> Unit,
+  onUpdateUserAvatar: ((String) -> Unit)? = null,
+  onUpdatePartnerAvatar: ((String) -> Unit)? = null,
   onShowWelcome: () -> Unit,
   firebaseUser: FirebaseUser? = null,
   isFirebaseConfigured: Boolean = false,
@@ -107,7 +124,112 @@ fun ProfileScreen(
   val themeController = LocalThemeController.current
   var showEditProfileDialog by remember { mutableStateOf(false) }
 
+  var showAvatarPickerForUser by remember { mutableStateOf(false) }
+  var showAvatarPickerForPartner by remember { mutableStateOf(false) }
+
+  // Activity Result Launchers for User Profile Picture
+  val userCameraLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.TakePicturePreview()
+  ) { bitmap: Bitmap? ->
+    if (bitmap != null) {
+      val localFilePath = ImagePickerHelper.saveBitmapToInternalStorage(context, bitmap, "user_avatar")
+      onUpdateUserAvatar?.invoke(localFilePath)
+      Toast.makeText(context, "Profile picture updated from camera!", Toast.LENGTH_SHORT).show()
+    }
+  }
+
+  val userGalleryLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.PickVisualMedia()
+  ) { uri: Uri? ->
+    if (uri != null) {
+      val localFilePath = ImagePickerHelper.saveUriToInternalStorage(context, uri, "user_avatar")
+      if (localFilePath != null) {
+        onUpdateUserAvatar?.invoke(localFilePath)
+        Toast.makeText(context, "Profile picture updated from gallery!", Toast.LENGTH_SHORT).show()
+      }
+    }
+  }
+
+  // Activity Result Launchers for Partner Profile Picture
+  val partnerCameraLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.TakePicturePreview()
+  ) { bitmap: Bitmap? ->
+    if (bitmap != null) {
+      val localFilePath = ImagePickerHelper.saveBitmapToInternalStorage(context, bitmap, "partner_avatar")
+      onUpdatePartnerAvatar?.invoke(localFilePath)
+      Toast.makeText(context, "Partner picture updated from camera!", Toast.LENGTH_SHORT).show()
+    }
+  }
+
+  val partnerGalleryLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.PickVisualMedia()
+  ) { uri: Uri? ->
+    if (uri != null) {
+      val localFilePath = ImagePickerHelper.saveUriToInternalStorage(context, uri, "partner_avatar")
+      if (localFilePath != null) {
+        onUpdatePartnerAvatar?.invoke(localFilePath)
+        Toast.makeText(context, "Partner picture updated from gallery!", Toast.LENGTH_SHORT).show()
+      }
+    }
+  }
+
   val currentTheme = coupleSettings?.themeName ?: "Night"
+
+  val defaultUserAvatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuCr3fVoQ3DuG0CGaMULkrVwYXnqw6pJ5HUcX2EdI7iqeF9Fn6_ajHYQ2ZLv1i3HhrkI4H-96sP18wDGIU0oxFPDEZD357n0OHCOGu6ggMr_vRsiyXPFGf4_OHLfVRFE2xvDZaE23woLUmY2DHXnpkYJlszIE0y7Y1Ak1zN7Axp2tgmCYSpCXvyqZGjqhEWe5WQHEbHRgFcZimZEwwnU3K5Dl5lzFHvJVUDqA2jo8HC2X2A1UXhVNg"
+  val defaultPartnerAvatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuAu_QpVqpQoXxQY_m-0ay9JFv6g_qxsE4rnOrAJDLH3kIwuhwESjtjVPlGs-TzKuCOcNmOW74WOex_9yitbsyfS2zGVWUDbkoBnnDEjvIaHUK-mZcQ9damHM7bl9AuOfGRK0-oI54cl3pvqb_XDub-aJQBmMpiZJYXJge_USqXkEs3hsOk_g1G0oKaXcOJo-joZN17jV9j499ASeqq8tnQWJjaVhjE-pblsv7lf82UXErOmkWjN5Q"
+
+  val userAvatarModel = coupleSettings?.userAvatarUrl?.ifBlank { defaultUserAvatar } ?: defaultUserAvatar
+  val partnerAvatarModel = coupleSettings?.partnerAvatarUrl?.ifBlank { defaultPartnerAvatar } ?: defaultPartnerAvatar
+
+  if (showAvatarPickerForUser) {
+    ProfilePictureSourceDialog(
+      title = "Update Your Profile Picture",
+      onDismiss = { showAvatarPickerForUser = false },
+      onTakePhoto = {
+        showAvatarPickerForUser = false
+        userCameraLauncher.launch(null)
+      },
+      onChooseFromGallery = {
+        showAvatarPickerForUser = false
+        userGalleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+      },
+      onSelectPreset = { presetUrl ->
+        showAvatarPickerForUser = false
+        onUpdateUserAvatar?.invoke(presetUrl)
+        Toast.makeText(context, "Avatar updated!", Toast.LENGTH_SHORT).show()
+      },
+      onRemovePhoto = {
+        showAvatarPickerForUser = false
+        onUpdateUserAvatar?.invoke("")
+        Toast.makeText(context, "Profile picture reset", Toast.LENGTH_SHORT).show()
+      }
+    )
+  }
+
+  if (showAvatarPickerForPartner) {
+    ProfilePictureSourceDialog(
+      title = "Update Partner's Picture",
+      onDismiss = { showAvatarPickerForPartner = false },
+      onTakePhoto = {
+        showAvatarPickerForPartner = false
+        partnerCameraLauncher.launch(null)
+      },
+      onChooseFromGallery = {
+        showAvatarPickerForPartner = false
+        partnerGalleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+      },
+      onSelectPreset = { presetUrl ->
+        showAvatarPickerForPartner = false
+        onUpdatePartnerAvatar?.invoke(presetUrl)
+        Toast.makeText(context, "Partner picture updated!", Toast.LENGTH_SHORT).show()
+      },
+      onRemovePhoto = {
+        showAvatarPickerForPartner = false
+        onUpdatePartnerAvatar?.invoke("")
+        Toast.makeText(context, "Partner picture reset", Toast.LENGTH_SHORT).show()
+      }
+    )
+  }
 
   Column(
     modifier = modifier
@@ -154,28 +276,74 @@ fun ProfileScreen(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
       ) {
-        AsyncImage(
-          model = "https://lh3.googleusercontent.com/aida-public/AB6AXuCr3fVoQ3DuG0CGaMULkrVwYXnqw6pJ5HUcX2EdI7iqeF9Fn6_ajHYQ2ZLv1i3HhrkI4H-96sP18wDGIU0oxFPDEZD357n0OHCOGu6ggMr_vRsiyXPFGf4_OHLfVRFE2xvDZaE23woLUmY2DHXnpkYJlszIE0y7Y1Ak1zN7Axp2tgmCYSpCXvyqZGjqhEWe5WQHEbHRgFcZimZEwwnU3K5Dl5lzFHvJVUDqA2jo8HC2X2A1UXhVNg",
-          contentDescription = "User Avatar",
+        // User Avatar Box
+        Box(
           modifier = Modifier
-            .size(76.dp)
-            .clip(CircleShape)
-            .border(3.dp, appColors.background, CircleShape)
-            .zIndex(1f),
-          contentScale = ContentScale.Crop
-        )
+            .zIndex(1f)
+            .clickable { showAvatarPickerForUser = true }
+            .testTag("user_avatar_picker_trigger")
+        ) {
+          AsyncImage(
+            model = userAvatarModel,
+            contentDescription = "User Avatar",
+            modifier = Modifier
+              .size(80.dp)
+              .clip(CircleShape)
+              .border(3.dp, appColors.background, CircleShape),
+            contentScale = ContentScale.Crop
+          )
+          Box(
+            modifier = Modifier
+              .align(Alignment.BottomEnd)
+              .size(26.dp)
+              .clip(CircleShape)
+              .background(appColors.primary)
+              .border(2.dp, appColors.background, CircleShape),
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              imageVector = Icons.Default.CameraAlt,
+              contentDescription = "Update User Photo",
+              tint = Color.White,
+              modifier = Modifier.size(14.dp)
+            )
+          }
+        }
 
-        AsyncImage(
-          model = "https://lh3.googleusercontent.com/aida-public/AB6AXuAu_QpVqpQoXxQY_m-0ay9JFv6g_qxsE4rnOrAJDLH3kIwuhwESjtjVPlGs-TzKuCOcNmOW74WOex_9yitbsyfS2zGVWUDbkoBnnDEjvIaHUK-mZcQ9damHM7bl9AuOfGRK0-oI54cl3pvqb_XDub-aJQBmMpiZJYXJge_USqXkEs3hsOk_g1G0oKaXcOJo-joZN17jV9j499ASeqq8tnQWJjaVhjE-pblsv7lf82UXErOmkWjN5Q",
-          contentDescription = "Partner Avatar",
+        // Partner Avatar Box
+        Box(
           modifier = Modifier
             .offset(x = (-16).dp)
-            .size(76.dp)
-            .clip(CircleShape)
-            .border(3.dp, appColors.background, CircleShape)
-            .zIndex(2f),
-          contentScale = ContentScale.Crop
-        )
+            .zIndex(2f)
+            .clickable { showAvatarPickerForPartner = true }
+            .testTag("partner_avatar_picker_trigger")
+        ) {
+          AsyncImage(
+            model = partnerAvatarModel,
+            contentDescription = "Partner Avatar",
+            modifier = Modifier
+              .size(80.dp)
+              .clip(CircleShape)
+              .border(3.dp, appColors.background, CircleShape),
+            contentScale = ContentScale.Crop
+          )
+          Box(
+            modifier = Modifier
+              .align(Alignment.BottomEnd)
+              .size(26.dp)
+              .clip(CircleShape)
+              .background(appColors.secondary)
+              .border(2.dp, appColors.background, CircleShape),
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              imageVector = Icons.Default.CameraAlt,
+              contentDescription = "Update Partner Photo",
+              tint = Color.White,
+              modifier = Modifier.size(14.dp)
+            )
+          }
+        }
       }
 
       Spacer(modifier = Modifier.height(10.dp))
@@ -886,4 +1054,266 @@ private fun SettingSwitchRow(
       )
     )
   }
+}
+
+@Composable
+private fun ProfilePictureSourceDialog(
+  title: String,
+  onDismiss: () -> Unit,
+  onTakePhoto: () -> Unit,
+  onChooseFromGallery: () -> Unit,
+  onSelectPreset: (String) -> Unit,
+  onRemovePhoto: () -> Unit
+) {
+  val appColors = AppTheme.colors
+  var showPresets by remember { mutableStateOf(false) }
+
+  val presetAvatars = listOf(
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+    "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
+    "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80",
+    "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80",
+    "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?auto=format&fit=crop&w=400&q=80"
+  )
+
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    containerColor = appColors.surfaceContainer,
+    title = {
+      Text(
+        text = title,
+        fontFamily = FontFamily.Serif,
+        fontSize = 20.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = appColors.textPrimary
+      )
+    },
+    text = {
+      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (!showPresets) {
+          Text(
+            text = "Select an image source to customize your profile picture:",
+            fontSize = 13.sp,
+            color = appColors.textSecondary,
+            modifier = Modifier.padding(bottom = 6.dp)
+          )
+
+          // 1. Camera Option
+          Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = appColors.surfaceContainerHigh),
+            modifier = Modifier
+              .fillMaxWidth()
+              .clickable { onTakePhoto() }
+              .testTag("avatar_option_camera")
+          ) {
+            Row(
+              modifier = Modifier.padding(14.dp),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Box(
+                modifier = Modifier
+                  .size(38.dp)
+                  .clip(CircleShape)
+                  .background(appColors.primary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(
+                  imageVector = Icons.Default.PhotoCamera,
+                  contentDescription = null,
+                  tint = appColors.primary,
+                  modifier = Modifier.size(20.dp)
+                )
+              }
+              Spacer(modifier = Modifier.width(14.dp))
+              Column {
+                Text(
+                  text = "Take Photo using Camera",
+                  fontSize = 14.sp,
+                  fontWeight = FontWeight.SemiBold,
+                  color = appColors.textPrimary
+                )
+                Text(
+                  text = "Capture a new snapshot directly",
+                  fontSize = 11.5.sp,
+                  color = appColors.textMuted
+                )
+              }
+            }
+          }
+
+          // 2. Gallery Option
+          Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = appColors.surfaceContainerHigh),
+            modifier = Modifier
+              .fillMaxWidth()
+              .clickable { onChooseFromGallery() }
+              .testTag("avatar_option_gallery")
+          ) {
+            Row(
+              modifier = Modifier.padding(14.dp),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Box(
+                modifier = Modifier
+                  .size(38.dp)
+                  .clip(CircleShape)
+                  .background(appColors.secondary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(
+                  imageVector = Icons.Default.PhotoLibrary,
+                  contentDescription = null,
+                  tint = appColors.secondary,
+                  modifier = Modifier.size(20.dp)
+                )
+              }
+              Spacer(modifier = Modifier.width(14.dp))
+              Column {
+                Text(
+                  text = "Choose from Device Gallery",
+                  fontSize = 14.sp,
+                  fontWeight = FontWeight.SemiBold,
+                  color = appColors.textPrimary
+                )
+                Text(
+                  text = "Select a photo stored on your device",
+                  fontSize = 11.5.sp,
+                  color = appColors.textMuted
+                )
+              }
+            }
+          }
+
+          // 3. Preset Avatars Option
+          Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = appColors.surfaceContainerHigh),
+            modifier = Modifier
+              .fillMaxWidth()
+              .clickable { showPresets = true }
+              .testTag("avatar_option_preset")
+          ) {
+            Row(
+              modifier = Modifier.padding(14.dp),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Box(
+                modifier = Modifier
+                  .size(38.dp)
+                  .clip(CircleShape)
+                  .background(appColors.primaryDark.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+              ) {
+                Icon(
+                  imageVector = Icons.Default.AccountCircle,
+                  contentDescription = null,
+                  tint = appColors.primaryDark,
+                  modifier = Modifier.size(20.dp)
+                )
+              }
+              Spacer(modifier = Modifier.width(14.dp))
+              Column {
+                Text(
+                  text = "Pick from Illustrated Presets",
+                  fontSize = 14.sp,
+                  fontWeight = FontWeight.SemiBold,
+                  color = appColors.textPrimary
+                )
+                Text(
+                  text = "Select from elegant couple portrait presets",
+                  fontSize = 11.5.sp,
+                  color = appColors.textMuted
+                )
+              }
+            }
+          }
+
+          // 4. Remove Photo Option
+          TextButton(
+            onClick = onRemovePhoto,
+            modifier = Modifier
+              .fillMaxWidth()
+              .testTag("avatar_option_remove")
+          ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = null,
+                tint = ErrorRed,
+                modifier = Modifier.size(16.dp)
+              )
+              Spacer(modifier = Modifier.width(6.dp))
+              Text("Reset Photo to Default", color = ErrorRed, fontSize = 13.sp)
+            }
+          }
+        } else {
+          // Display Preset Avatar Grid
+          Column {
+            Text(
+              text = "Tap a portrait preset to set as your profile avatar:",
+              fontSize = 12.5.sp,
+              color = appColors.textSecondary,
+              modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+              presetAvatars.take(3).forEach { url ->
+                AsyncImage(
+                  model = url,
+                  contentDescription = "Preset Avatar",
+                  modifier = Modifier
+                    .size(68.dp)
+                    .clip(CircleShape)
+                    .border(2.dp, appColors.primary, CircleShape)
+                    .clickable { onSelectPreset(url) },
+                  contentScale = ContentScale.Crop
+                )
+              }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+              presetAvatars.drop(3).take(3).forEach { url ->
+                AsyncImage(
+                  model = url,
+                  contentDescription = "Preset Avatar",
+                  modifier = Modifier
+                    .size(68.dp)
+                    .clip(CircleShape)
+                    .border(2.dp, appColors.secondary, CircleShape)
+                    .clickable { onSelectPreset(url) },
+                  contentScale = ContentScale.Crop
+                )
+              }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            TextButton(
+              onClick = { showPresets = false },
+              modifier = Modifier.align(Alignment.End)
+            ) {
+              Text("Back to options", color = appColors.primary)
+            }
+          }
+        }
+      }
+    },
+    confirmButton = {},
+    dismissButton = {
+      TextButton(onClick = onDismiss) {
+        Text("Cancel", color = appColors.textMuted)
+      }
+    }
+  )
 }

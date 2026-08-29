@@ -320,6 +320,8 @@ fun RealUsApp(viewModel: RealUsViewModel) {
                 onUpdateProfile = { n1, n2, ann ->
                   viewModel.updateCoupleProfile(n1, n2, ann)
                 },
+                onUpdateUserAvatar = { viewModel.updateUserAvatar(it) },
+                onUpdatePartnerAvatar = { viewModel.updatePartnerAvatar(it) },
                 onShowWelcome = { viewModel.checkUserSession() },
                 firebaseUser = firebaseUser,
                 isFirebaseConfigured = viewModel.isFirebaseConfigured,
@@ -416,6 +418,8 @@ fun RealUsApp(viewModel: RealUsViewModel) {
                     onUpdateProfile = { n1, n2, ann ->
                       viewModel.updateCoupleProfile(n1, n2, ann)
                     },
+                    onUpdateUserAvatar = { viewModel.updateUserAvatar(it) },
+                    onUpdatePartnerAvatar = { viewModel.updatePartnerAvatar(it) },
                     onShowWelcome = { viewModel.checkUserSession() },
                     firebaseUser = firebaseUser,
                     isFirebaseConfigured = viewModel.isFirebaseConfigured,

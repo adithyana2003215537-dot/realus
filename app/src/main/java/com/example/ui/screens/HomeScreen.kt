@@ -142,6 +142,12 @@ fun HomeScreen(
           .fillMaxWidth()
           .padding(top = 16.dp, bottom = 12.dp)
       ) {
+        val defaultUserAvatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuCr3fVoQ3DuG0CGaMULkrVwYXnqw6pJ5HUcX2EdI7iqeF9Fn6_ajHYQ2ZLv1i3HhrkI4H-96sP18wDGIU0oxFPDEZD357n0OHCOGu6ggMr_vRsiyXPFGf4_OHLfVRFE2xvDZaE23woLUmY2DHXnpkYJlszIE0y7Y1Ak1zN7Axp2tgmCYSpCXvyqZGjqhEWe5WQHEbHRgFcZimZEwwnU3K5Dl5lzFHvJVUDqA2jo8HC2X2A1UXhVNg"
+        val defaultPartnerAvatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuAu_QpVqpQoXxQY_m-0ay9JFv6g_qxsE4rnOrAJDLH3kIwuhwESjtjVPlGs-TzKuCOcNmOW74WOex_9yitbsyfS2zGVWUDbkoBnnDEjvIaHUK-mZcQ9damHM7bl9AuOfGRK0-oI54cl3pvqb_XDub-aJQBmMpiZJYXJge_USqXkEs3hsOk_g1G0oKaXcOJo-joZN17jV9j499ASeqq8tnQWJjaVhjE-pblsv7lf82UXErOmkWjN5Q"
+
+        val userAvatarUrl = coupleSettings?.userAvatarUrl?.ifBlank { defaultUserAvatar } ?: defaultUserAvatar
+        val partnerAvatarUrl = coupleSettings?.partnerAvatarUrl?.ifBlank { defaultPartnerAvatar } ?: defaultPartnerAvatar
+
         Row(
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.Center,
@@ -149,12 +155,13 @@ fun HomeScreen(
         ) {
           // Partner 1 Avatar
           AsyncImage(
-            model = "https://lh3.googleusercontent.com/aida-public/AB6AXuCr3fVoQ3DuG0CGaMULkrVwYXnqw6pJ5HUcX2EdI7iqeF9Fn6_ajHYQ2ZLv1i3HhrkI4H-96sP18wDGIU0oxFPDEZD357n0OHCOGu6ggMr_vRsiyXPFGf4_OHLfVRFE2xvDZaE23woLUmY2DHXnpkYJlszIE0y7Y1Ak1zN7Axp2tgmCYSpCXvyqZGjqhEWe5WQHEbHRgFcZimZEwwnU3K5Dl5lzFHvJVUDqA2jo8HC2X2A1UXhVNg",
+            model = userAvatarUrl,
             contentDescription = "User avatar",
             modifier = Modifier
               .size(64.dp)
               .clip(CircleShape)
               .border(3.dp, appColors.surfaceContainerHighest, CircleShape)
+              .clickable { onNavigateTab("us") }
               .zIndex(1f),
             contentScale = ContentScale.Crop
           )
@@ -171,12 +178,13 @@ fun HomeScreen(
 
           // Partner 2 Avatar
           AsyncImage(
-            model = "https://lh3.googleusercontent.com/aida-public/AB6AXuAu_QpVqpQoXxQY_m-0ay9JFv6g_qxsE4rnOrAJDLH3kIwuhwESjtjVPlGs-TzKuCOcNmOW74WOex_9yitbsyfS2zGVWUDbkoBnnDEjvIaHUK-mZcQ9damHM7bl9AuOfGRK0-oI54cl3pvqb_XDub-aJQBmMpiZJYXJge_USqXkEs3hsOk_g1G0oKaXcOJo-joZN17jV9j499ASeqq8tnQWJjaVhjE-pblsv7lf82UXErOmkWjN5Q",
+            model = partnerAvatarUrl,
             contentDescription = "Partner avatar",
             modifier = Modifier
               .size(64.dp)
               .clip(CircleShape)
               .border(3.dp, appColors.surfaceContainerHighest, CircleShape)
+              .clickable { onNavigateTab("us") }
               .zIndex(1f),
             contentScale = ContentScale.Crop
           )

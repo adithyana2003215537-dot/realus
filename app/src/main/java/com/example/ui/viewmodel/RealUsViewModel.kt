@@ -1026,6 +1026,37 @@ class RealUsViewModel(application: Application) : AndroidViewModel(application) 
     }
   }
 
+  fun updateUserAvatar(avatarUrl: String) {
+    coupleSettings.value?.let { current ->
+      viewModelScope.launch {
+        repository.updateSettings(current.copy(userAvatarUrl = avatarUrl))
+      }
+    } ?: run {
+      viewModelScope.launch {
+        repository.saveCoupleSettings(CoupleSettings(userAvatarUrl = avatarUrl))
+      }
+    }
+    val uid = firebaseManager.auth?.currentUser?.uid
+    if (uid != null) {
+      _userProfile.value = _userProfile.value?.copy(profilePicUrl = avatarUrl)
+      viewModelScope.launch {
+        firebaseManager.updateUserProfilePic(uid, avatarUrl)
+      }
+    }
+  }
+
+  fun updatePartnerAvatar(avatarUrl: String) {
+    coupleSettings.value?.let { current ->
+      viewModelScope.launch {
+        repository.updateSettings(current.copy(partnerAvatarUrl = avatarUrl))
+      }
+    } ?: run {
+      viewModelScope.launch {
+        repository.saveCoupleSettings(CoupleSettings(partnerAvatarUrl = avatarUrl))
+      }
+    }
+  }
+
   fun updateCoupleProfile(name1: String, name2: String, anniversary: String) {
     val days = calculateDaysTogether(anniversary)
     coupleSettings.value?.let { current ->
